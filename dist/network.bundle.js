@@ -499,6 +499,10 @@ try {
     C.root = window;
 }
 
+C.root.__catching = false;
+
+C.__catching = false;
+
 //noinspection JSUnresolvedVariable
 // C.root = C.isNodejs ? GLOBAL : window;
 
@@ -1357,7 +1361,8 @@ module.exports = E;
  */
 var C = require('lodash/core');
 var Mini = require('../mini');
-var H = require('./stacktrace');
+var E = require('./stacktrace');
+var D = require('./detect');
 
 var I = function(template) {
     I.template = template || I.resultWrapper;
@@ -1400,16 +1405,23 @@ I.resultWrapper = function(v) {
  */
 I.each = function(obj, fn, stackStack) {
     stackStack = stackStack || [];
-    stackStack.push(H.getStackTrace());
+    if (typeof stackStack == 'string' || !Mini.isArrayLike(stackStack)) {
+        stackStack = [stackStack];
+    }
+    stackStack.unshift(E.getStackTrace());
     var ret = I.resultWrapper(obj);
-    if (H.debug) {
+    if (D.root.H.debug) {
+        var print = false;
         C.each(obj, function(val, key, list) {
             try {
                 var r = fn(val, key, list);
                 if (r) ret[key] = r;
             } catch (e) {
                 //E.printStackTrace only accepts one parameter
-                e.printStackTrace(stackStack);
+                if (!print) {
+                    e.printStackTrace(stackStack);
+                    print = true;
+                }
             }
         });
     } else {
@@ -1439,18 +1451,25 @@ I.every = C.each;
  */
 I.until = function(data, fn, callable, stackStack) {
     stackStack = stackStack || [];
-    stackStack.push(H.getStackTrace());
+    if (typeof stackStack == 'string' || !Mini.isArrayLike(stackStack)) {
+        stackStack = [stackStack];
+    }
+    stackStack.unshift(E.getStackTrace());
     var ret = I.resultWrapper(data);
     //TODO: does it work? (not including `core` module here due to dependency error)
     //TODO: remove dependency on static named variable `H`
-    if (H.debug) {
+    if (D.root.H.debug) {
+        var print = false;
         C.find(data, function(val, key, list) {
             try {
                 var r = fn(val, key, list);
                 if (r) ret[key] = r;
                 return callable(val, key, list);
             } catch (e) {
-                e.printStackTrace('Nested error', stackStack);
+                if (!print) {
+                    e.printStackTrace(stackStack);
+                    print = true;
+                }
             }
         });
     } else {
@@ -1550,7 +1569,7 @@ I.filter = function(ele, fn) {
 };
 
 module.exports = I;
-},{"../mini":3,"./stacktrace":17,"lodash/core":24}],12:[function(require,module,exports){
+},{"../mini":3,"./detect":8,"./stacktrace":17,"lodash/core":24}],12:[function(require,module,exports){
 /*
  * Math-Related Module
  */
@@ -2239,7 +2258,41 @@ var C = {};
 
 var Mini = require('../mini');
 
-var log = (console.error || console.log);
+function InformError() {
+    this.message = "Inform Error Catchers";
+    this.name = "InformError";
+    this.stack = new Error(this.name).stack;
+}
+
+InformError.prototype = Error.prototype;
+
+C.InformError = InformError;
+
+var clog = function (content) {
+    console.error(content);
+    //throw a simple error to inform catchers, eval(someone is catching)
+    if (eval('__catching')) {
+        throw new InformError("Nested Error");
+    }
+};
+
+var logStack = function(stackStack) {
+    var joined = [];
+    Mini.arrayEach(stackStack || [], function(stack) {
+        if (typeof stack == 'string') {
+            joined = joined.concat(stack.split("\n"));
+        } else if (stack instanceof Error) {
+            joined = joined.concat(stack.stack.split("\n"));
+        }
+    });
+    if (joined.length != 0) {
+        var ret = joined[0];
+        for (var i = 1; i < joined.length; i++) {
+            ret += "\n" + joined[i];
+        }
+        clog.apply(this, [ret]);
+    }
+};
 
 /**
  * Generate stack trace string. (separated by `\n`)
@@ -2259,6 +2312,7 @@ C.getStackTrace = function(title) {
         split.shift();
         split.shift();
         split.unshift(t);
+        // split.unshift(callstack);
         return split.join('\n');
     }
     return e.stack;
@@ -2274,6 +2328,7 @@ var DefaultTitle = "Error:";
  * @memberof H
  * @param {String|Error} [title] title or error of current layer
  * @param {Array} [stackStack] stack trace stack (possibly)
+ * @param {boolean} [silient] the current error should be silent
  * @example
  *
  * usage:
@@ -2284,8 +2339,7 @@ var DefaultTitle = "Error:";
  * variant:
  * error.printStackTrace() -> printStackTrace(error, [])
  */
-C.printStackTrace = function(title, stackStack) {
-    stackStack = stackStack || [];
+C.printStackTrace = function(title, stackStack, silient) {
     if (Mini.isArrayLike(title)) {
         //noinspection JSValidateTypes for arguments
         stackStack = title;
@@ -2296,12 +2350,12 @@ C.printStackTrace = function(title, stackStack) {
         }
     }
     title = title || DefaultTitle;
-    stackStack.unshift(C.getStackTrace(title));
-    var n = stackStack.length;
-    var l = stackStack.length;
-    for (l++; --l;) {
-        log(stackStack[n - l]);
+    stackStack = stackStack || [];
+    if (!Mini.isArrayLike(stackStack) || typeof stackStack == 'string') {
+        stackStack = [stackStack];
     }
+    if (!silient) stackStack.unshift(C.getStackTrace(title));
+    logStack.call(this, stackStack);
 };
 
 /**
@@ -6888,6 +6942,8 @@ C.root.serverPath = N.serverPath = "http://dev.indoorstar.com/ids/";
 C.root.dataServer = N.dataServer = "http://indoorstar.com:6601/";
 C.root.innerServer = N.innerServer = "http://dev.indoorstar.com:6603/ids/";
 
+N.__catching = true;
+
 N.setActionHeader = function(url) {
     C.root.serverPath = N.serverPath = url;
 };
@@ -6978,6 +7034,51 @@ var prepareRequest = function(url, method, async, data, type, callback, errback,
     var req = {};
     req.request = new XMLHttpRequest();
 
+    if (C.root.H.debug) {
+        //TODO: should add a StackTraceStack class and a context tree
+        trace = trace || [];
+        if (!C.isArrayLike(trace) || typeof trace == 'string') {
+            trace = [trace];
+        }
+        trace.unshift(C.getStackTrace());
+
+        function printTrace() {
+            try {
+                C.printStackTrace(trace, undefined, true);
+            } catch (e) {
+                //ignore InformError
+            }
+        }
+
+        function catchInform(func) {
+            return function() {
+                var __ = C.__catching;
+                C.__catching = true;
+                try {
+                    func.apply(env, arguments);
+                } catch (e) {
+                    printTrace();
+                }
+                C.__catching = __;
+            };
+        }
+
+        //noinspection JSUnusedGlobalSymbols
+        this.stackTrace = trace;
+        var oldCb = callback;
+        var errCb = errback;
+        var env = this;
+        env.__catching = true;
+        if (oldCb) {
+            callback.stackTrace = trace;
+            callback = catchInform(oldCb);
+        }
+        if (errCb) {
+            errback.stackTrace = trace;
+            errback = catchInform(errCb);
+        }
+    }
+
     req.open = function() {
         req.request.open();
     };
@@ -7050,76 +7151,91 @@ var innerPostRequest = function(url, type, data, callback, errback, trace) {
     prepareRequest(url, 'POST', true, data, null, callback, errback, trace).send();
 };
 
-N.getRequest = function(url, callback, errback, type) {
-    return innerGetRequest(url, executors[type || 'raw'], callback, errback);
+N.getRequest = function(url, callback, errback, type, trace) {
+    return innerGetRequest(url, executors[type || 'raw'], callback, errback, trace);
 };
 
-N.getJson = function(url, callback, errback, overrideType) {
-    return innerGetRequest(url, executors[overrideType || 'json'], callback, errback);
+N.getJson = function(url, callback, errback, overrideType, trace) {
+    return innerGetRequest(url, executors[overrideType || 'json'], callback, errback, trace);
 };
 
-N.getBuffer = function(url, callback, errback) {
-    return innerGetRequest(url, executors.arraybuffer, callback, errback);
+N.getBuffer = function(url, callback, errback, trace) {
+    return innerGetRequest(url, executors.arraybuffer, callback, errback, trace);
 };
 
-N.getBlob = function(url, callback, errback) {
-    return innerGetRequest(url, executors.blob, callback, errback);
+N.getBlob = function(url, callback, errback, trace) {
+    return innerGetRequest(url, executors.blob, callback, errback, trace);
 };
 
-N.getForm = function(url, callback, errback) {
-    return innerGetRequest(url, executors.form, callback, errback);
+N.getForm = function(url, callback, errback, trace) {
+    return innerGetRequest(url, executors.form, callback, errback, trace);
 };
 
-N.getRaw = function(url, callback, errback) {
+N.getRaw = function(url, callback, errback, trace) {
     return innerGetRequest(url, executors.arraybuffer, function(d) {
         try {
             callback(Enc.handleActionRaw(d));
         } catch (e) {
             callback(d);
         }
-    }, errback);
+    }, errback, trace);
 };
 
-N.postRequest = function(url, body, callback, errback) {
-    return innerPostRequest(url, {}, body, callback, errback);
+N.postRequest = function(url, body, callback, errback, trace) {
+    return innerPostRequest(url, {}, body, callback, errback, trace);
 };
 
-N.postForm = function(url, form, callback, errback) {
-    return N.postRequest(url, new FormData(form), callback, errback);
+N.postForm = function(url, form, callback, errback, trace) {
+    return N.postRequest(url, new FormData(form), callback, errback, trace);
 };
 
-N.postJson = function(url, json, callback, errback) {
+N.postJson = function(url, json, callback, errback, trace) {
     return innerPostRequest(url, {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
-    }, json, callback, errback);
+    }, json, callback, errback, trace);
 };
 
-N.postFile = function(url, file, callback, errback) {
+N.postFile = function(url, file, callback, errback, trace) {
     file = file instanceof File ? file : file.files[0];
     var form = new FormData();
     form.append('file', file);
-    N.postForm(url, form, callback, errback);
+    N.postForm(url, form, callback, errback, trace);
 };
 
-N.cGetAction = function(server, action, params, callback, errback, type) {
+N.cGetAction = function(server, action, params, callback, errback, type, trace) {
+    if (typeof errback != 'function' && trace === undefined) {
+        //assume trace here
+        trace = type;
+        type = errback;
+        errback = noop;
+    }
+    if (typeof type != 'string' && trace === undefined) {
+        trace = type;
+        type = null;
+    }
     return N.getBuffer(C.getUrlByParams(server, action, params), function(obj) {
         (callback || noop)(parseActionResponse(obj, type));
-    }, errback);
+    }, errback, trace);
 };
 
-N.getAction = function(action, params, callback, errback) {
-    return N.cGetAction(N.serverPath, action, params, callback, errback);
+N.getAction = function(action, params, callback, errback, trace) {
+    return N.cGetAction(N.serverPath, action, params, callback, errback, trace);
 };
 
 N.get = N.getRequest;
 
-N.cPostAction = function(server, action, params, data, callback, errback) {
-    return N.postRequest(C.getUrlByParams(server, action, params), C.param(data), callback, errback);
+N.cPostAction = function(server, action, params, data, callback, errback, trace) {
+    if (typeof errback != 'function' && trace === undefined) {
+        //assume trace here
+        trace = errback;
+        errback = noop;
+    }
+    return N.postRequest(C.getUrlByParams(server, action, params), C.param(data), callback, errback, trace);
 };
 
-N.postAction = function(action, params, data, callback, errback) {
-    return N.cPostAction(N.serverPath, action, params, data, callback, errback);
+N.postAction = function(action, params, data, callback, errback, trace) {
+    return N.cPostAction(N.serverPath, action, params, data, callback, errback, trace);
 };
 
 N.post = N.postRequest;
