@@ -110,32 +110,38 @@ var prepareRequest = function(url, method, async, data, type, callback, errback,
             trace = [trace];
         }
         trace.unshift(C.getStackTrace());
+        //noinspection JSUnusedGlobalSymbols
+        this.stackTrace = trace;
+        var oldCb = callback;
+        var errCb = errback;
         if (callback) {
-            var oldCb = callback;
-            var errCb = errback;
-            var env = this;
-            env.__catching = true;
-            if (oldCb) callback = function() {
-                var __ = C.__catching;
-                C.__catching = true;
-                try {
-                    oldCb.apply(env, arguments);
-                } catch (e) {
-                    C.printStackTrace(trace);
-                }
-                C.__catching = __;
-            };
-            if (errCb) errback = function() {
-                var __ = C.__catching;
-                C.__catching = true;
-                try {
-                    errCb.apply(env, arguments);
-                } catch (e) {
-                    C.printStackTrace(trace);
-                }
-                C.__catching = __;
-            };
+            callback.stackTrace = trace;
         }
+        if (errback) {
+            errback.stackTrace = trace;
+        }
+        var env = this;
+        env.__catching = true;
+        if (oldCb) callback = function() {
+            var __ = C.__catching;
+            C.__catching = true;
+            try {
+                oldCb.apply(env, arguments);
+            } catch (e) {
+                C.printStackTrace(trace);
+            }
+            C.__catching = __;
+        };
+        if (errCb) errback = function() {
+            var __ = C.__catching;
+            C.__catching = true;
+            try {
+                errCb.apply(env, arguments);
+            } catch (e) {
+                C.printStackTrace(trace);
+            }
+            C.__catching = __;
+        };
     }
 
     req.open = function() {
