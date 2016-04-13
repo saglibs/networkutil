@@ -120,14 +120,16 @@ var prepareRequest = function(url, method, async, data, type, callback, errback,
         }
 
         function catchInform(func) {
-            var __ = C.__catching;
-            C.__catching = true;
-            try {
-                func.apply(env, arguments);
-            } catch (e) {
-                printTrace();
-            }
-            C.__catching = __;
+            return function() {
+                var __ = C.__catching;
+                C.__catching = true;
+                try {
+                    func.apply(env, arguments);
+                } catch (e) {
+                    printTrace();
+                }
+                C.__catching = __;
+            };
         }
 
         //noinspection JSUnusedGlobalSymbols
