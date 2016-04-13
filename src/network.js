@@ -11,6 +11,8 @@ C.root.serverPath = N.serverPath = "http://dev.indoorstar.com/ids/";
 C.root.dataServer = N.dataServer = "http://indoorstar.com:6601/";
 C.root.innerServer = N.innerServer = "http://dev.indoorstar.com:6603/ids/";
 
+N.__catching = true;
+
 N.setActionHeader = function(url) {
     C.root.serverPath = N.serverPath = url;
 };
@@ -101,6 +103,41 @@ var prepareRequest = function(url, method, async, data, type, callback, errback,
     var req = {};
     req.request = new XMLHttpRequest();
 
+    if (C.root.H.debug) {
+        //TODO: should add a StackTraceStack class and a context tree
+        trace = trace || [];
+        if (!C.isArrayLike(trace) || typeof trace == 'string') {
+            trace = [trace];
+        }
+        trace.unshift(C.getStackTrace());
+        if (callback) {
+            var oldCb = callback;
+            var errCb = errback;
+            var env = this;
+            env.__catching = true;
+            if (oldCb) callback = function() {
+                var __ = C.__catching;
+                C.__catching = true;
+                try {
+                    oldCb.apply(env, arguments);
+                } catch (e) {
+                    e.printStackTrace(trace);
+                }
+                C.__catching = __;
+            };
+            if (errCb) errback = function() {
+                var __ = C.__catching;
+                C.__catching = true;
+                try {
+                    errCb.apply(env, arguments);
+                } catch (e) {
+                    e.printStackTrace(trace);
+                }
+                C.__catching = __;
+            };
+        }
+    }
+
     req.open = function() {
         req.request.open();
     };
@@ -173,76 +210,76 @@ var innerPostRequest = function(url, type, data, callback, errback, trace) {
     prepareRequest(url, 'POST', true, data, null, callback, errback, trace).send();
 };
 
-N.getRequest = function(url, callback, errback, type) {
-    return innerGetRequest(url, executors[type || 'raw'], callback, errback);
+N.getRequest = function(url, callback, errback, type, trace) {
+    return innerGetRequest(url, executors[type || 'raw'], callback, errback, trace);
 };
 
-N.getJson = function(url, callback, errback, overrideType) {
-    return innerGetRequest(url, executors[overrideType || 'json'], callback, errback);
+N.getJson = function(url, callback, errback, overrideType, trace) {
+    return innerGetRequest(url, executors[overrideType || 'json'], callback, errback, trace);
 };
 
-N.getBuffer = function(url, callback, errback) {
-    return innerGetRequest(url, executors.arraybuffer, callback, errback);
+N.getBuffer = function(url, callback, errback, trace) {
+    return innerGetRequest(url, executors.arraybuffer, callback, errback, trace);
 };
 
-N.getBlob = function(url, callback, errback) {
-    return innerGetRequest(url, executors.blob, callback, errback);
+N.getBlob = function(url, callback, errback, trace) {
+    return innerGetRequest(url, executors.blob, callback, errback, trace);
 };
 
-N.getForm = function(url, callback, errback) {
-    return innerGetRequest(url, executors.form, callback, errback);
+N.getForm = function(url, callback, errback, trace) {
+    return innerGetRequest(url, executors.form, callback, errback, trace);
 };
 
-N.getRaw = function(url, callback, errback) {
+N.getRaw = function(url, callback, errback, trace) {
     return innerGetRequest(url, executors.arraybuffer, function(d) {
         try {
             callback(Enc.handleActionRaw(d));
         } catch (e) {
             callback(d);
         }
-    }, errback);
+    }, errback, trace);
 };
 
-N.postRequest = function(url, body, callback, errback) {
-    return innerPostRequest(url, {}, body, callback, errback);
+N.postRequest = function(url, body, callback, errback, trace) {
+    return innerPostRequest(url, {}, body, callback, errback, trace);
 };
 
-N.postForm = function(url, form, callback, errback) {
-    return N.postRequest(url, new FormData(form), callback, errback);
+N.postForm = function(url, form, callback, errback, trace) {
+    return N.postRequest(url, new FormData(form), callback, errback, trace);
 };
 
-N.postJson = function(url, json, callback, errback) {
+N.postJson = function(url, json, callback, errback, trace) {
     return innerPostRequest(url, {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
-    }, json, callback, errback);
+    }, json, callback, errback, trace);
 };
 
-N.postFile = function(url, file, callback, errback) {
+N.postFile = function(url, file, callback, errback, trace) {
     file = file instanceof File ? file : file.files[0];
     var form = new FormData();
     form.append('file', file);
-    N.postForm(url, form, callback, errback);
+    N.postForm(url, form, callback, errback, trace);
 };
 
-N.cGetAction = function(server, action, params, callback, errback, type) {
+N.cGetAction = function(server, action, params, callback, errback, type, trace) {
     return N.getBuffer(C.getUrlByParams(server, action, params), function(obj) {
         (callback || noop)(parseActionResponse(obj, type));
-    }, errback);
+    }, errback, trace);
 };
 
-N.getAction = function(action, params, callback, errback) {
-    return N.cGetAction(N.serverPath, action, params, callback, errback);
+N.getAction = function(action, params, callback, errback, trace) {
+    return N.cGetAction(N.serverPath, action, params, callback, errback, trace);
 };
 
 N.get = N.getRequest;
 
-N.cPostAction = function(server, action, params, data, callback, errback) {
-    return N.postRequest(C.getUrlByParams(server, action, params), C.param(data), callback, errback);
+N.cPostAction = function(server, action, params, data, callback, errback, trace) {
+    return N.postRequest(C.getUrlByParams(server, action, params), C.param(data), callback, errback, trace);
 };
 
-N.postAction = function(action, params, data, callback, errback) {
-    return N.cPostAction(N.serverPath, action, params, data, callback, errback);
+N.postAction = function(action, params, data, callback, errback, trace) {
+    return N.cPostAction(N.serverPath, action, params, data, callback, errback, trace);
 };
 
 N.post = N.postRequest;
