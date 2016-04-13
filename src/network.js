@@ -110,38 +110,40 @@ var prepareRequest = function(url, method, async, data, type, callback, errback,
             trace = [trace];
         }
         trace.unshift(C.getStackTrace());
+
+        function printTrace() {
+            try {
+                C.printStackTrace(trace, undefined, true);
+            } catch (e) {
+                //ignore InformError
+            }
+        }
+
+        function catchInform(func) {
+            var __ = C.__catching;
+            C.__catching = true;
+            try {
+                func.apply(env, arguments);
+            } catch (e) {
+                printTrace();
+            }
+            C.__catching = __;
+        }
+
         //noinspection JSUnusedGlobalSymbols
         this.stackTrace = trace;
         var oldCb = callback;
         var errCb = errback;
-        if (callback) {
-            callback.stackTrace = trace;
-        }
-        if (errback) {
-            errback.stackTrace = trace;
-        }
         var env = this;
         env.__catching = true;
-        if (oldCb) callback = function() {
-            var __ = C.__catching;
-            C.__catching = true;
-            try {
-                oldCb.apply(env, arguments);
-            } catch (e) {
-                C.printStackTrace(trace);
-            }
-            C.__catching = __;
-        };
-        if (errCb) errback = function() {
-            var __ = C.__catching;
-            C.__catching = true;
-            try {
-                errCb.apply(env, arguments);
-            } catch (e) {
-                C.printStackTrace(trace);
-            }
-            C.__catching = __;
-        };
+        if (oldCb) {
+            callback.stackTrace = trace;
+            callback = catchInform(oldCb);
+        }
+        if (errCb) {
+            errback.stackTrace = trace;
+            errback = catchInform(errCb);
+        }
     }
 
     req.open = function() {
