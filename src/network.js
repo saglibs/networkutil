@@ -121,7 +121,7 @@ var prepareRequest = function(url, method, async, data, type, callback, errback,
                 try {
                     oldCb.apply(env, arguments);
                 } catch (e) {
-                    e.printStackTrace(trace);
+                    C.printStackTrace(trace);
                 }
                 C.__catching = __;
             };
@@ -131,7 +131,7 @@ var prepareRequest = function(url, method, async, data, type, callback, errback,
                 try {
                     errCb.apply(env, arguments);
                 } catch (e) {
-                    e.printStackTrace(trace);
+                    C.printStackTrace(trace);
                 }
                 C.__catching = __;
             };
