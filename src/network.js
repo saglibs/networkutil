@@ -263,6 +263,16 @@ N.postFile = function(url, file, callback, errback, trace) {
 };
 
 N.cGetAction = function(server, action, params, callback, errback, type, trace) {
+    if (typeof errback != 'function' && trace === undefined) {
+        //assume trace here
+        trace = type;
+        type = errback;
+        errback = noop;
+    }
+    if (typeof type != 'string' && trace === undefined) {
+        trace = type;
+        type = null;
+    }
     return N.getBuffer(C.getUrlByParams(server, action, params), function(obj) {
         (callback || noop)(parseActionResponse(obj, type));
     }, errback, trace);
@@ -275,6 +285,11 @@ N.getAction = function(action, params, callback, errback, trace) {
 N.get = N.getRequest;
 
 N.cPostAction = function(server, action, params, data, callback, errback, trace) {
+    if (typeof errback != 'function' && trace === undefined) {
+        //assume trace here
+        trace = errback;
+        errback = noop;
+    }
     return N.postRequest(C.getUrlByParams(server, action, params), C.param(data), callback, errback, trace);
 };
 
