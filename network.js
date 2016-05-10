@@ -1,5 +1,5 @@
 var H = require('coreutil/core');
-var N = require('./src/network');
+var N = require('./src/main/javascript/network');
 
 H.root.N = N;
 
