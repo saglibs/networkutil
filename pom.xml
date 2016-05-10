@@ -6,7 +6,7 @@
 
     <groupId>com.sagnitude</groupId>
     <artifactId>networkutil</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.0-SNAPSHOT</version>
 
     <name>networkutil</name>
 
@@ -14,7 +14,16 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.sagnitude</groupId>
+            <artifactId>coreutil</artifactId>
+            <version>0.0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
+
     <build>
+        <sourceDirectory>src/main/javascript</sourceDirectory>
         <resources>
             <resource>
                 <directory>src/main/javascript</directory>
