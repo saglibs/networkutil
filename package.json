@@ -19,21 +19,22 @@
     "url": "https://github.com/saglibs/networkutil/issues"
   },
   "homepage": "https://github.com/saglibs/networkutil#readme",
-  "dependencies": {
-    "coreutil": "saglibs/coreutil"
+  "//": {
+    "dependencies": {
+      "coreutil": "saglibs/coreutil"
+    }
   },
   "devDependencies": {
-    "browserify": "^13.0.0",
+    "browserify": "^13.0.1",
     "del": "^2.2.0",
-    "dev": "^0.1.3",
     "event-stream": "^3.3.2",
     "gulp": "^3.9.1",
-    "gulp-buffer": "^0.0.2",
+    "gulp-buffer": "0.0.2",
     "gulp-sourcemaps": "^1.6.0",
     "gulp-tap": "^0.1.3",
     "gulp-uglify": "^1.5.3",
     "gulp-util": "^3.0.7",
-    "qunitjs": "^1.23.0",
+    "qunitjs": "^1.23.1",
     "vinyl-source-stream": "^1.1.0"
   }
 }
