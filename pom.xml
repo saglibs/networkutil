@@ -23,18 +23,59 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>src/main/javascript</sourceDirectory>
+        <sourceDirectory>src</sourceDirectory>
         <resources>
             <resource>
-                <directory>src/main/javascript</directory>
+                <directory>src</directory>
                 <filtering>true</filtering>
+                <includes>
+                    <include>**/*.*</include>
+                </includes>
+                <targetPath>/src</targetPath>
             </resource>
             <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
+                <directory>dist</directory>
+                <includes>
+                    <include>**/*.*</include>
+                </includes>
+                <targetPath>/dist</targetPath>
+            </resource>
+            <resource>
+                <directory>${project.basedir}</directory>
+                <includes>
+                    <include>**/*.js</include>
+                    <include>package.json</include>
+                </includes>
+                <excludes>
+                    <exclude>src/**/*.js</exclude>
+                    <exclude>test/**/*.js</exclude>
+                    <exclude>target/**/*.js</exclude>
+                    <exclude>dist/**/*.js</exclude>
+                    <exclude>node_modules/**/*.js</exclude>
+                </excludes>
             </resource>
         </resources>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.10</version>
+                <executions>
+                    <execution>
+                        <id>unpack-dependencies</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>unpack-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includes>**/*.*</includes>
+                            <outputDirectory>${project.basedir}/node_modules/coreutil</outputDirectory>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>true</overWriteSnapshots>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -48,7 +89,7 @@
                         <phase>initialize</phase>
                         <configuration>
                             <executable>npm</executable>
-                            <workingDirectory>.</workingDirectory>
+                            <workingDirectory>${project.basedir}</workingDirectory>
                             <arguments>
                                 <argument>install</argument>
                             </arguments>
@@ -62,7 +103,7 @@
                         <phase>initialize</phase>
                         <configuration>
                             <executable>npm</executable>
-                            <workingDirectory>.</workingDirectory>
+                            <workingDirectory>${project.basedir}</workingDirectory>
                             <arguments>
                                 <argument>link</argument>
                             </arguments>
@@ -98,7 +139,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
-                    <descriptor>src/assembly/package.xml</descriptor>
+                    <descriptor>package.xml</descriptor>
                     <finalName>${project.build.finalName}</finalName>
                     <appendAssemblyId>false</appendAssemblyId>
                 </configuration>

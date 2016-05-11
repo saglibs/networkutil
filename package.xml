@@ -7,18 +7,25 @@
     </formats>
     <fileSets>
         <fileSet>
-            <directory>src/main/javascript</directory>
+            <directory>src</directory>
             <includes>
                 <include>*.js</include>
             </includes>
-            <outputDirectory>${project.name}</outputDirectory>
+            <outputDirectory>${project.name}/src</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>src/main/resources/dist</directory>
+            <directory>dist</directory>
             <includes>
                 <include>*.js</include>
             </includes>
             <outputDirectory>${project.name}/dist</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>.</directory>
+            <includes>
+                <include>*.js</include>
+            </includes>
+            <outputDirectory>${project.name}</outputDirectory>
         </fileSet>
     </fileSets>
     <dependencySets>
