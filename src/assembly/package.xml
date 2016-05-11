@@ -11,14 +11,23 @@
             <includes>
                 <include>*.js</include>
             </includes>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory>${project.name}</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>src/main/resources/dist</directory>
             <includes>
                 <include>*.js</include>
             </includes>
-            <outputDirectory>dist</outputDirectory>
+            <outputDirectory>${project.name}/dist</outputDirectory>
         </fileSet>
     </fileSets>
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>coreutil</outputDirectory>
+            <unpack>true</unpack>
+            <includes>
+                <include>com.sagnitude:coreutil</include>
+            </includes>
+        </dependencySet>
+    </dependencySets>
 </assembly>
