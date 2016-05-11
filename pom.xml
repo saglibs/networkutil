@@ -6,7 +6,7 @@
 
     <groupId>com.sagnitude</groupId>
     <artifactId>networkutil</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.1</version>
 
     <name>networkutil</name>
 
@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.sagnitude</groupId>
             <artifactId>coreutil</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>0.1</version>
         </dependency>
     </dependencies>
 
