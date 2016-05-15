@@ -69,6 +69,14 @@ Mini.hiddenProperty = function(v) {
     };
 };
 
+//No <IE9 Compat
+Mini.keys = function() {
+    if (arguments[0]) {
+        return Object.keys(arguments[0]);
+    }
+    return Object.keys(this);
+};
+
 module.exports = Mini;
 },{}],4:[function(require,module,exports){
 var root = require('./_root');
@@ -5565,7 +5573,28 @@ C.__isRoot__ = true;
 
 C.__name = '$H';
 
-C.isArrayLike = require('lodash/isArrayLike');
+C.isArrayLike = function(value) {
+    if (value == null || value == undefined) {
+        return false;
+    }
+    var length = value["length"];
+    var toString = Object.prototype.toString.call(value);
+    if (toString == "[object Function]" || toString == "[object GeneratorFunction]") {
+        return false;
+    }
+    if (typeof length == "number") {
+        if (length > -1 && length < Number.MAX_VALUE && length % 1 === 0) {
+            return true;
+        }
+    }
+    return false;
+};
+
+C.isObject = function(value) {
+    var toString = Object.prototype.toString.call(value);
+    return !!(toString == "[object Function]" || toString == "[object GeneratorFunction]");
+
+};
 
 /**
  * Check if a value can be parsed to an integer
@@ -5746,7 +5775,7 @@ C.language = C.isNodejs ? "" : (navigator.language || navigator['browserLanguage
 
 module.exports = C;
 
-},{"lodash/isArrayLike":26}],45:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 /*
  * String Encoding
  * Binary Operation
@@ -7331,7 +7360,7 @@ if (!Object.defineProperty || (0 < H.getIE() <= 8 && navigator.userAgent.indexOf
     addProperty = function(instance, k, descriptor) {
         instance[k] = descriptor.value;
 
-        if (isObject(descriptor[k])) {
+        if (H.isObject(descriptor[k])) {
             instance[k].ienumerable = !descriptor.enumerable;
         } else {
             if (!instance[k].ienumerables) {
@@ -8024,7 +8053,7 @@ function parseActionResponse(actionResult, type) {
     }
     //for json object
     if (!actionResult.hasOwnProperty('s')) throw new Error('Invalid Response');
-    if (actionResult.s !== 0) throw new Error(actionResult.m || 'Unknown Error');
+    if (actionResult.s !== 0) throw new Error(actionResult['m'] || 'Unknown Error');
     var hasBody = actionResult.d != null && actionResult.d != "null";
     if (hasBody) {
         try {
@@ -8033,6 +8062,7 @@ function parseActionResponse(actionResult, type) {
             //if not a json, this will fail very quickly
             if (Enc) {
                 try {
+                    //noinspection JSUnresolvedFunction
                     return Enc.handleActionRaw(actionResult.d);
                 } catch (e) {
                     console.warn("Decode rawdata failed!");
@@ -8118,7 +8148,7 @@ var prepareRequest = function(url, method, async, data, type, callback, errback,
     }
 
     req.open = function() {
-        req.request.open();
+        req.request.open(method, url, async);
     };
     req.cancel = function() {
         req.request.abort();
@@ -8212,6 +8242,7 @@ N.getForm = function(url, callback, errback, trace) {
 N.getRaw = function(url, callback, errback, trace) {
     return innerGetRequest(url, executors.arraybuffer, function(d) {
         try {
+            //noinspection JSUnresolvedFunction
             callback(Enc.handleActionRaw(d));
         } catch (e) {
             callback(d);

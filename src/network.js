@@ -56,7 +56,7 @@ function parseActionResponse(actionResult, type) {
     }
     //for json object
     if (!actionResult.hasOwnProperty('s')) throw new Error('Invalid Response');
-    if (actionResult.s !== 0) throw new Error(actionResult.m || 'Unknown Error');
+    if (actionResult.s !== 0) throw new Error(actionResult['m'] || 'Unknown Error');
     var hasBody = actionResult.d != null && actionResult.d != "null";
     if (hasBody) {
         try {
@@ -65,6 +65,7 @@ function parseActionResponse(actionResult, type) {
             //if not a json, this will fail very quickly
             if (Enc) {
                 try {
+                    //noinspection JSUnresolvedFunction
                     return Enc.handleActionRaw(actionResult.d);
                 } catch (e) {
                     console.warn("Decode rawdata failed!");
@@ -150,7 +151,7 @@ var prepareRequest = function(url, method, async, data, type, callback, errback,
     }
 
     req.open = function() {
-        req.request.open();
+        req.request.open(method, url, async);
     };
     req.cancel = function() {
         req.request.abort();
@@ -244,6 +245,7 @@ N.getForm = function(url, callback, errback, trace) {
 N.getRaw = function(url, callback, errback, trace) {
     return innerGetRequest(url, executors.arraybuffer, function(d) {
         try {
+            //noinspection JSUnresolvedFunction
             callback(Enc.handleActionRaw(d));
         } catch (e) {
             callback(d);
